@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,7 +10,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::ifstream file(argv[1]);
+    std::ifstream file(argv[1], std::ios::binary);
 
     if (!file.is_open()) {
         std::cout << "Error opening file\n";
@@ -24,22 +25,49 @@ int main(int argc, char* argv[]) {
     file.close();
 
     int n = 0;
-    int io = 0;
-    while (n < text.length()) {
-        if (static_cast<unsigned char>(text[n]) == 32) {
-            if (io == 0) {
-                std::cout << "Found ASCII 20 at position " << n << '\n';
-                n += 2;
-                std::cout << static_cast<int>(static_cast<unsigned char>(text[n]));
-                n += 3;
-            } else {
-                std::cout << "Found ASCII 20 at position " << n << '\n';
-                n += 2;
-                std::cout << static_cast<unsigned char>(text[n]);
-                n += 3;
+    std::uint8_t r[8] = {0};
+    std::uint8_t io = 0;
+    while (n + 4 < text.length()) {
+        int op = static_cast<unsigned char>(text[n]);
+        int t1 = static_cast<unsigned char>(text[n + 1]);
+        int v1 = static_cast<unsigned char>(text[n + 2]);
+        int t2 = static_cast<unsigned char>(text[n + 3]);
+        int v2 = static_cast<unsigned char>(text[n + 4]);
+        if (op == 0) {
+            if (t1 == 1 && t2 == 1) {
+                if (v1 < 8 && v2 < 8) {
+                    r[v1] = r[v2];
+                }
+            } else if (t1 == 1 && t2 == 0){
+                if (v1 < 8) {
+                    r[v1] = v2;
+                }
+            }
+        } else if (op == 16) {
+            if (t1 == 1 && t2 == 1) {
+                if (v1 < 8 && v2 < 8) {
+                    r[v1] += r[v2];
+                }
+            } else if (t1 == 1 && t2 == 0){
+                if (v1 < 8) {
+                    r[v1] += v2;
+                }
+            }
+        } else if (op == 17) {
+            if (t1 == 1 && t2 == 1) {
+                if (v1 < 8 && v2 < 8) {
+                    r[v1] -= r[v2];
+                }
+            } else if (t1 == 1 && t2 == 0){
+                if (v1 < 8) {
+                    r[v1] -= v2;
+                }
             }
         }
+        n += 5;
     }
+
+    std::cout << static_cast<int>(r[0]) << '\n';
 
     return 0;
 }
